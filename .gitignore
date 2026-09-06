@@ -1,0 +1,68 @@
+# ============================================================
+# Local AI Generation Environment - .gitignore
+#
+# Goal: anyone can `git clone` this repo and get scripts, docs,
+# and workflows in seconds. Model weights, generated media, and
+# machine-specific installs are NEVER tracked - they're re-fetched
+# or regenerated locally per the instructions in models/README.md
+# and outputs/README.md.
+# ============================================================
+
+# --- Model weights (large binaries, re-downloadable) ---
+models/**
+!models/**/
+!models/**/.gitkeep
+!models/README.md
+
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.gguf
+*.bin
+*.onnx
+*.pb
+
+# --- Generated outputs (images/videos, reproducible from workflows) ---
+outputs/**
+!outputs/**/
+!outputs/**/.gitkeep
+!outputs/README.md
+
+*.mp4
+*.mov
+*.avi
+*.webm
+*.gif
+outputs/images/*.png
+outputs/images/*.jpg
+outputs/images/*.jpeg
+outputs/images/*.webp
+
+# --- ComfyUI portable install (if placed inside this repo) ---
+ComfyUI_windows_portable/
+ComfyUI/
+python_embeded/
+embedded_python/
+__pycache__/
+*.pyc
+
+# --- Docker / Open WebUI volumes ---
+open-webui-data/
+docker-volumes/
+*.volume
+
+# --- Secrets / machine-specific config ---
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+config.local.json
+
+# --- OS / editor cruft ---
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/*
+!.vscode/settings.json

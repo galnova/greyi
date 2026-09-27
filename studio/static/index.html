@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grey-I</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <h1>Grey-I</h1>
+  <div class="sub">Local generation, driven by your ComfyUI workflows</div>
+
+  <div class="wrap">
+    <div class="modes" id="modes"></div>
+
+    <div class="panel">
+      <label class="small">Prompt</label>
+      <textarea id="prompt" placeholder="Describe what you want..."></textarea>
+
+      <div id="modelSection" style="display:none">
+        <label class="small">Model</label>
+        <select id="modelSelect"></select>
+      </div>
+
+      <div id="imageSection" style="display:none">
+        <label class="small">Reference image</label>
+        <div class="dropzone" id="dropzone">
+          <span id="dropzoneLabel">Click or drag an image here</span>
+          <input type="file" id="imageInput" accept="image/*">
+        </div>
+      </div>
+
+      <div id="negativeSection">
+        <label class="small">Negative prompt (optional)</label>
+        <textarea id="negative" style="min-height:48px" placeholder="What to avoid..."></textarea>
+      </div>
+
+      <div class="row">
+        <button class="generate" id="generateBtn">Generate</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="results" id="results"></div>
+  </div>
+
+<script src="app.js"></script>
+</body>
+</html>

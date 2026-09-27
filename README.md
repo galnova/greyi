@@ -12,6 +12,37 @@ machine.
 | **Open WebUI**  | Browser chat UI for Ollama (Docker)   | `3000`  |
 | **ComfyUI**     | Image/video generation (node-based UI)| `8188`  |
 
+## Quick start (daily use)
+
+Easiest option: double-click **"Launch AI Chat"** on your Desktop. It starts
+Ollama, starts Open WebUI, waits for it to come up, and opens your browser
+to it automatically - no prompts, nothing to type.
+
+That shortcut just runs this from the repo root:
+
+```powershell
+.\scripts\start-all.ps1
+```
+
+Which in turn runs `start-ollama.ps1` and `start-openwebui.ps1` individually
+(both idempotent - safe to re-run any time, they detect what's already
+running and skip it). Use those two directly instead of `start-all.ps1` if
+you only want one piece running, or want to see each step's own output.
+
+Requires Docker Desktop to be running in the background (it usually
+auto-starts with Windows once installed; if the browser tab shows nothing,
+open Docker Desktop first and give it a few seconds, then re-run the
+shortcut).
+
+For **ComfyUI** (image/video generation - a separate, parallel tool, not a
+step after the chat stack): double-click **"Launch ComfyUI"** on the
+Desktop, or run `.\scripts\start-comfyui.ps1`. See `scripts/comfyui-note.md`
+for details.
+
+Note: on an 8GB VRAM card, running a loaded Ollama model and heavy ComfyUI
+generation at the same time can be tight - if you hit out-of-memory errors,
+close one while using the other.
+
 ## Repo layout
 
 ```
@@ -56,16 +87,19 @@ repopulate them locally.
    ```
    Wires up to Ollama automatically via `http://host.docker.internal:11434`.
 
-5. **ComfyUI** - see `scripts/comfyui-note.md`. Uses its own portable
-   Windows launcher (`run_nvidia_gpu.bat`), not a script in this repo.
+5. **ComfyUI** - installed at `D:\ComfyUI\ComfyUI_windows_portable\`. Launch
+   via `.\scripts\start-comfyui.ps1` or the "Launch ComfyUI" Desktop
+   shortcut. See `scripts/comfyui-note.md` for the full setup, including how
+   it's wired to read models from this repo's `models/` folder.
 
 ## Starting / stopping
 
-| Component      | Start                                   | Stop                                      |
-|-----------------|-------------------------------------------|---------------------------------------------|
-| Ollama          | `.\scripts\start-ollama.ps1`             | `Stop-Process -Name ollama`                 |
-| Open WebUI      | `.\scripts\start-openwebui.ps1`          | `docker stop open-webui`                    |
-| ComfyUI         | `run_nvidia_gpu.bat` (in its own folder) | Close the console window / Ctrl+C            |
+| Component         | Start                                                            | Stop                                                    |
+|--------------------|--------------------------------------------------------------------|------------------------------------------------------------|
+| Ollama + Open WebUI (one-click) | Desktop shortcut "Launch AI Chat", or `.\scripts\start-all.ps1` | Close Docker Desktop, or the two "Stop" commands below |
+| Ollama             | `.\scripts\start-ollama.ps1`                                      | `Stop-Process -Name ollama`                               |
+| Open WebUI         | `.\scripts\start-openwebui.ps1`                                   | `docker stop open-webui`                                  |
+| ComfyUI            | Desktop shortcut "Launch ComfyUI", or `.\scripts\start-comfyui.ps1` | Close the ComfyUI console window                        |
 
 ## Where models go
 
@@ -76,15 +110,16 @@ own model store separately (`ollama list`, `ollama pull <model>`).
 
 ## Status checklist
 
-- [ ] Ran `scripts/detect-hardware.ps1`, reviewed `HARDWARE.md`
-- [ ] Ollama installed, `ollama --version` works
-- [ ] Ollama server running (`scripts/start-ollama.ps1`)
-- [ ] Picked and pulled one small LLM to start
-- [ ] Docker Desktop installed and running
-- [ ] Open WebUI running (`scripts/start-openwebui.ps1`), reachable at http://localhost:3000
-- [ ] Open WebUI shows the Ollama model in its model picker
-- [ ] ComfyUI portable downloaded and extracted (outside git tracking)
-- [ ] ComfyUI running via `run_nvidia_gpu.bat`, reachable at http://localhost:8188
+- [x] Ran `scripts/detect-hardware.ps1`, reviewed `HARDWARE.md` (RTX 3070 Ti Laptop, 8GB VRAM, 64GB RAM)
+- [x] Ollama installed, `ollama --version` works
+- [x] Ollama server running (models stored on `D:\ollama-models`)
+- [x] Picked and pulled one small LLM to start (`llama3.2:3b`)
+- [x] Docker Desktop installed and running (via WSL2)
+- [x] Open WebUI running, reachable at http://localhost:3000
+- [x] Open WebUI shows the Ollama model in its model picker
+- [x] ComfyUI portable downloaded and extracted to `D:\ComfyUI\ComfyUI_windows_portable\`
+- [x] ComfyUI running via `scripts/start-comfyui.ps1`, reachable at http://localhost:8188
+- [x] ComfyUI wired to read models from this repo's `models/` folder (`extra_model_paths.yaml`)
 - [ ] First checkpoint model placed in `models/checkpoints/`
 - [ ] First image generated successfully in ComfyUI
 - [ ] First workflow exported as JSON into `workflows/`

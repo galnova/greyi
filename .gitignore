@@ -23,6 +23,19 @@ models/**
 *.onnx
 *.pb
 
+# --- Your original art / reference images (never pushed to GitHub) ---
+references/**
+!references/**/
+!references/.gitkeep
+!references/README.md
+references/*.png
+references/*.jpg
+references/*.jpeg
+references/*.webp
+references/*.gif
+references/*.bmp
+references/*.tiff
+
 # --- Generated outputs (images/videos, reproducible from workflows) ---
 outputs/**
 !outputs/**/

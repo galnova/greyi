@@ -1,0 +1,23 @@
+# Reference copy of ComfyUI's extra_model_paths.yaml, which lives at:
+#   D:\ComfyUI\ComfyUI_windows_portable\ComfyUI\extra_model_paths.yaml
+#
+# ComfyUI itself is gitignored (outside this repo entirely, on D:), so this
+# config isn't tracked anywhere else. If you ever reinstall ComfyUI, copy
+# this file's contents back into place at the path above (rename away the
+# .reference extension isn't needed - just copy the content).
+#
+# Points ComfyUI at this repo's models/ folder so models placed there
+# (per models/README.md) are picked up automatically, keeping a single
+# source of truth instead of duplicating files into ComfyUI's own models/.
+
+new_ai_repo:
+    base_path: C:/Users/kjete/OneDrive/Desktop/new_ai/models
+    checkpoints: checkpoints/
+    loras: loras/
+    vae: vae/
+    controlnet: controlnet/
+    upscale_models: upscalers/
+    unet: unet/
+    diffusion_models: unet/
+    clip: clip/
+    text_encoders: clip/

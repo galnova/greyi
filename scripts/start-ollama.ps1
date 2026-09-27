@@ -39,20 +39,27 @@ if ($existing) {
     Write-Host "Ollama server started." -ForegroundColor Green
 }
 
-# --- 3. Model pull - manual confirmation required, nothing automatic ---
-Write-Host ""
-Write-Host "No model is pulled automatically." -ForegroundColor Yellow
-Write-Host "Once you know your hardware budget (see HARDWARE.md), pull ONE small model to start, e.g.:"
-Write-Host "    ollama pull llama3.2:3b      # ~2GB, good on modest VRAM/RAM"
-Write-Host "    ollama pull phi3:mini        # ~2.3GB, small and capable"
-Write-Host "    ollama pull qwen2.5:7b       # ~4.7GB, needs more headroom"
-Write-Host ""
-$confirm = Read-Host "Pull a model now? Enter a model name (e.g. llama3.2:3b), or leave blank to skip"
-if ($confirm) {
-    Write-Host "Pulling $confirm ..." -ForegroundColor Cyan
-    ollama pull $confirm
+# --- 3. Model pull - only offered if no models exist yet. If you already
+#        have at least one model, this is skipped so the script can be used
+#        as a silent, no-prompt daily launcher (see start-all.ps1). ---
+$existingModels = ollama list 2>$null | Select-Object -Skip 1
+if ($existingModels) {
+    Write-Host "Existing models found - skipping pull prompt. Run 'ollama pull <model>' manually to add more." -ForegroundColor DarkGray
 } else {
-    Write-Host "Skipped model pull. Run 'ollama pull <model>' manually when ready." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "No models installed yet." -ForegroundColor Yellow
+    Write-Host "Once you know your hardware budget (see HARDWARE.md), pull ONE small model to start, e.g.:"
+    Write-Host "    ollama pull llama3.2:3b      # ~2GB, good on modest VRAM/RAM"
+    Write-Host "    ollama pull phi3:mini        # ~2.3GB, small and capable"
+    Write-Host "    ollama pull qwen2.5:7b       # ~4.7GB, needs more headroom"
+    Write-Host ""
+    $confirm = Read-Host "Pull a model now? Enter a model name (e.g. llama3.2:3b), or leave blank to skip"
+    if ($confirm) {
+        Write-Host "Pulling $confirm ..." -ForegroundColor Cyan
+        ollama pull $confirm
+    } else {
+        Write-Host "Skipped model pull. Run 'ollama pull <model>' manually when ready." -ForegroundColor Yellow
+    }
 }
 
 Write-Host ""

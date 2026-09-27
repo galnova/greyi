@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "PowerShell(Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{N='FreeGB';E={[math]::Round\\($_.Free/1GB,1\\)}}, @{N='UsedGB';E={[math]::Round\\($_.Used/1GB,1\\)}})",
+      "Bash(find \"/d/ComfyUI/ComfyUI_windows_portable/ComfyUI/models\" -iname \"*ace*\" -o -iname \"*qwen*\" 2>/dev/null)",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/ComfyUI/models/**)",
+      "Bash(find \"/d/ComfyUI\" -iname \"*ace*step*\" -o -iname \"*qwen*ace*\" 2>/dev/null; echo \"---broad---\"; find \"/c/Users/kjete\" -maxdepth 4 -iname \"*ace_1.5*\" -o -iname \"*ace1.5*\" -o -iname \"*acestep*\" 2>/dev/null | head -30)",
+      "Read(//d/ComfyUI/**)",
+      "Bash(mv \"/c/Users/kjete/Downloads/ace_1.5_vae.safetensors\" \"/c/Users/kjete/OneDrive/Desktop/new_ai/models/vae/\")",
+      "Bash(mv \"/c/Users/kjete/Downloads/qwen_0.6b_ace15.safetensors\" \"/c/Users/kjete/OneDrive/Desktop/new_ai/models/clip/\")",
+      "Bash(mv \"/c/Users/kjete/Downloads/qwen_4b_ace15.safetensors\" \"/c/Users/kjete/OneDrive/Desktop/new_ai/models/clip/\")",
+      "Bash(mv \"/c/Users/kjete/Downloads/acestep_v1.5_turbo.safetensors\" \"/c/Users/kjete/OneDrive/Desktop/new_ai/models/unet/\")",
+      "Bash(powershell -NoProfile -Command 'Get-Process | Where-Object { $_.Path -like '\\\\''*ComfyUI*'\\\\'' -or $_.ProcessName -match '\\\\''python'\\\\'' } | Select-Object Id, ProcessName, Path')",
+      "PowerShell(Stop-Process -Id 31820 -Force)",
+      "PowerShell(Get-Process -Id 31820 -ErrorAction SilentlyContinue)",
+      "Bash(nvidia-smi --query-gpu=name,memory.total,memory.used,driver_version --format=csv)",
+      "Bash(which git; ls \"/d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/\"; ls \"/c/Users/kjete/OneDrive/Desktop/new_ai/models/upscalers/\" 2>&1)",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes//**)",
+      "Bash(ls \"/d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/ComfyUI-Impact-Pack/\" | head -20)",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/ComfyUI-Impact-Pack//**)",
+      "Bash(\"/d/ComfyUI/ComfyUI_windows_portable/python_embeded/python.exe\" -s -m pip install -r \"/d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/ComfyUI-Impact-Pack/requirements.txt\")",
+      "Bash(\"/d/ComfyUI/ComfyUI_windows_portable/python_embeded/python.exe\" -s -m pip install -r \"/d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/ComfyUI-Impact-Subpack/requirements.txt\")",
+      "Bash(curl -L -o \"/c/Users/kjete/OneDrive/Desktop/new_ai/models/upscalers/4x-UltraSharp.pth\" \"https://huggingface.co/lokCX/4x-Ultrasharp/resolve/main/4x-UltraSharp.pth\" -w \"\\\\nHTTP_STATUS:%{http_code} SIZE:%{size_download}\\\\n\")",
+      "Bash(curl -s \"http://localhost:8188/object_info/FaceDetailer\")",
+      "Bash(curl -s \"http://localhost:8188/object_info/UltralyticsDetectorProvider\")",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/ComfyUI-Impact-Subpack/**)",
+      "Bash(grep -n \"ultralytics\" \"/d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/ComfyUI-Impact-Subpack/modules/subpack_nodes.py\" | head -20)",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/ComfyUI/custom_nodes/ComfyUI-Impact-Subpack/modules/**)",
+      "Bash(curl -L --retry 3 --retry-delay 2 -o \"/d/ComfyUI/ComfyUI_windows_portable/ComfyUI/models/ultralytics/bbox/face_yolov8n.pt\" \"https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8n.pt\" -w \"\\\\nface: HTTP_STATUS:%{http_code} SIZE:%{size_download}\\\\n\")",
+      "Bash(curl -sI --max-time 15 \"https://huggingface.co\" -w \"STATUS:%{http_code}\\\\n\")",
+      "Bash(find \"/d/ComfyUI/ComfyUI_windows_portable/python_embeded/Lib/site-packages/comfyui_workflow_templates_json\" -maxdepth 1 -iname \"*.json\" | grep -vi templates; echo \"---\"; ls \"/d/ComfyUI/ComfyUI_windows_portable/python_embeded/Lib/site-packages/comfyui_workflow_templates_json/\")",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/python_embeded/Lib/site-packages/comfyui_workflow_templates_json/**)",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/python_embeded/Lib/site-packages/comfyui_workflow_templates_json//**)",
+      "Bash(find \"/d/ComfyUI/ComfyUI_windows_portable/python_embeded/Lib/site-packages/comfyui_workflow_templates_json/templates\" -iname \"index*\" -o -iname \"*categor*\" -o -iname \"*.json\" | grep -iE \"index|manifest|categor\" )",
+      "Read(//d/ComfyUI/ComfyUI_windows_portable/python_embeded/Lib/site-packages/comfyui_workflow_templates_json/templates/**)",
+      "PowerShell(Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum | ForEach-Object { [math]::Round\\($_.Sum/1GB,1\\) })"
+    ]
+  }
+}

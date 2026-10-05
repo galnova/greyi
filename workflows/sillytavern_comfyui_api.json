@@ -1,0 +1,59 @@
+{
+  "4": { "class_type": "CheckpointLoaderSimple", "inputs": { "ckpt_name": "dreamshaperXL_alpha2Xl10.safetensors" } },
+  "12": { "class_type": "CheckpointLoaderSimple", "inputs": { "ckpt_name": "sd_xl_refiner_1.0.safetensors" } },
+  "5": { "class_type": "EmptyLatentImage", "inputs": { "width": 1024, "height": 1024, "batch_size": 1 } },
+  "6": { "class_type": "CLIPTextEncode", "inputs": { "text": "%prompt%", "clip": ["4", 1] } },
+  "7": { "class_type": "CLIPTextEncode", "inputs": { "text": "%negative_prompt%", "clip": ["4", 1] } },
+  "15": { "class_type": "CLIPTextEncode", "inputs": { "text": "%prompt%", "clip": ["12", 1] } },
+  "16": { "class_type": "CLIPTextEncode", "inputs": { "text": "%negative_prompt%", "clip": ["12", 1] } },
+  "10": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "add_noise": "enable", "noise_seed": 42, "steps": 25, "cfg": 8,
+      "sampler_name": "euler", "scheduler": "normal", "start_at_step": 0, "end_at_step": 20,
+      "return_with_leftover_noise": "enable",
+      "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]
+    }
+  },
+  "11": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "add_noise": "disable", "noise_seed": 0, "steps": 25, "cfg": 8,
+      "sampler_name": "euler", "scheduler": "normal", "start_at_step": 20, "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": ["12", 0], "positive": ["15", 0], "negative": ["16", 0], "latent_image": ["10", 0]
+    }
+  },
+  "17": { "class_type": "VAEDecode", "inputs": { "samples": ["11", 0], "vae": ["12", 2] } },
+  "20": { "class_type": "UltralyticsDetectorProvider", "inputs": { "model_name": "bbox/face_yolov8n.pt" } },
+  "21": { "class_type": "UltralyticsDetectorProvider", "inputs": { "model_name": "bbox/hand_yolov8n.pt" } },
+  "22": {
+    "class_type": "FaceDetailer",
+    "inputs": {
+      "image": ["17", 0], "model": ["12", 0], "clip": ["12", 1], "vae": ["12", 2],
+      "positive": ["15", 0], "negative": ["16", 0], "bbox_detector": ["20", 0],
+      "guide_size": 512, "guide_size_for": true, "max_size": 1024, "seed": 0, "steps": 20, "cfg": 8,
+      "sampler_name": "euler", "scheduler": "normal", "denoise": 0.5, "feather": 5, "noise_mask": true,
+      "force_inpaint": true, "bbox_threshold": 0.5, "bbox_dilation": 10, "bbox_crop_factor": 3.0,
+      "sam_detection_hint": "center-1", "sam_dilation": 0, "sam_threshold": 0.93, "sam_bbox_expansion": 0,
+      "sam_mask_hint_threshold": 0.7, "sam_mask_hint_use_negative": "False", "drop_size": 10,
+      "wildcard": "", "cycle": 1
+    }
+  },
+  "23": {
+    "class_type": "FaceDetailer",
+    "inputs": {
+      "image": ["22", 0], "model": ["12", 0], "clip": ["12", 1], "vae": ["12", 2],
+      "positive": ["15", 0], "negative": ["16", 0], "bbox_detector": ["21", 0],
+      "guide_size": 512, "guide_size_for": true, "max_size": 1024, "seed": 0, "steps": 20, "cfg": 8,
+      "sampler_name": "euler", "scheduler": "normal", "denoise": 0.5, "feather": 5, "noise_mask": true,
+      "force_inpaint": true, "bbox_threshold": 0.5, "bbox_dilation": 10, "bbox_crop_factor": 3.0,
+      "sam_detection_hint": "center-1", "sam_dilation": 0, "sam_threshold": 0.93, "sam_bbox_expansion": 0,
+      "sam_mask_hint_threshold": 0.7, "sam_mask_hint_use_negative": "False", "drop_size": 10,
+      "wildcard": "", "cycle": 1
+    }
+  },
+  "24": { "class_type": "UpscaleModelLoader", "inputs": { "model_name": "4x-UltraSharp.pth" } },
+  "25": { "class_type": "ImageUpscaleWithModel", "inputs": { "upscale_model": ["24", 0], "image": ["23", 0] } },
+  "19": { "class_type": "SaveImage", "inputs": { "filename_prefix": "SillyTavern", "images": ["25", 0] } }
+}

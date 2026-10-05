@@ -2,6 +2,10 @@ const modesEl = document.getElementById('modes');
 const promptEl = document.getElementById('prompt');
 const negativeEl = document.getElementById('negative');
 const negativeSection = document.getElementById('negativeSection');
+const lyricsEl = document.getElementById('lyrics');
+const lyricsSection = document.getElementById('lyricsSection');
+const durationEl = document.getElementById('duration');
+const durationSection = document.getElementById('durationSection');
 const modelSection = document.getElementById('modelSection');
 const modelSelect = document.getElementById('modelSelect');
 const imageSection = document.getElementById('imageSection');
@@ -26,6 +30,26 @@ try {
 
 promptEl.addEventListener('input', () => {
   try { localStorage.setItem(PROMPT_STORAGE_KEY, promptEl.value); } catch (e) {}
+});
+
+const LYRICS_STORAGE_KEY = 'studio_lyrics_draft';
+try {
+  const savedLyrics = localStorage.getItem(LYRICS_STORAGE_KEY);
+  if (savedLyrics) lyricsEl.value = savedLyrics;
+} catch (e) {}
+
+lyricsEl.addEventListener('input', () => {
+  try { localStorage.setItem(LYRICS_STORAGE_KEY, lyricsEl.value); } catch (e) {}
+});
+
+const DURATION_STORAGE_KEY = 'studio_duration_draft';
+try {
+  const savedDuration = localStorage.getItem(DURATION_STORAGE_KEY);
+  if (savedDuration) durationEl.value = savedDuration;
+} catch (e) {}
+
+durationEl.addEventListener('input', () => {
+  try { localStorage.setItem(DURATION_STORAGE_KEY, durationEl.value); } catch (e) {}
 });
 
 async function loadModes() {
@@ -53,6 +77,15 @@ function selectMode(key) {
   const cfg = modes[key];
   imageSection.style.display = cfg.needs_image ? 'block' : 'none';
   negativeSection.style.display = cfg.output_kind === 'text' ? 'none' : 'block';
+  lyricsSection.style.display = cfg.needs_lyrics ? 'block' : 'none';
+
+  if (cfg.needs_duration) {
+    durationSection.style.display = 'block';
+    if (cfg.duration_max) durationEl.max = cfg.duration_max;
+    if (!durationEl.value) durationEl.value = cfg.duration_default || 60;
+  } else {
+    durationSection.style.display = 'none';
+  }
   promptEl.placeholder = cfg.output_kind === 'text'
     ? 'Ask anything - coding help, questions, writing...'
     : 'Describe what you want...';
@@ -110,6 +143,8 @@ generateBtn.onclick = async () => {
   fd.append('negative', negativeEl.value.trim());
   if (uploadedFilename) fd.append('image_filename', uploadedFilename);
   if (cfg.models && cfg.models.length) fd.append('model', modelSelect.value);
+  if (cfg.needs_lyrics) fd.append('lyrics', lyricsEl.value.trim());
+  if (cfg.needs_duration) fd.append('duration', durationEl.value || cfg.duration_default || 60);
 
   try {
     const res = await fetch('/api/generate', { method: 'POST', body: fd });

@@ -25,7 +25,7 @@ WORKFLOWS = ROOT / "workflows"
 OUTPUTS = ROOT / "outputs"
 COMFYUI_URL = "http://localhost:8188"
 OLLAMA_URL = "http://localhost:11434"
-CHAT_NUM_CTX = 8192  # explicit context window so token-remaining has a real ceiling to measure against
+CHAT_NUM_CTX = 32768  # explicit context window so token-remaining has a real ceiling to measure against
 
 app = FastAPI(title="Studio")
 
@@ -64,6 +64,20 @@ MODES = {
         "negative_nodes": [],
         "image_node": None,
         "output_kind": "audio",
+        # widgets_values[1] on node 94 is the "lyrics" field - a genuinely
+        # separate thing from "tags" (style/genre). Filled in = sung vocals,
+        # empty = instrumental. Set explicitly from the frontend's Lyrics
+        # box each time, rather than always clearing it (which killed
+        # vocals entirely) or leaving stale leftover lyrics in place (which
+        # was the original bug).
+        "lyrics_field": (94, 1),
+        # node 99 ("Song Duration") feeds both the latent-audio length and
+        # the duration seen by the text encoder via links - editing it here
+        # controls actual generated length. No Studio-imposed cap; the only
+        # ceiling is the node's own max (2000s / ~33min).
+        "duration_field": (99, 0),
+        "duration_default": 60,
+        "duration_max": 2000,
     },
     "image2video": {
         "label": "Image to Video",
@@ -93,7 +107,7 @@ def _set_text(node, index, value):
     node["widgets_values"][index] = value
 
 
-def build_prompt(mode_key, prompt_text, negative_text, image_filename):
+def build_prompt(mode_key, prompt_text, negative_text, image_filename, lyrics_text="", duration=None):
     cfg = MODES[mode_key]
     if cfg.get("disabled"):
         raise HTTPException(400, cfg.get("disabled_reason", "This mode isn't available yet."))
@@ -107,6 +121,18 @@ def build_prompt(mode_key, prompt_text, negative_text, image_filename):
     for nid in cfg["negative_nodes"]:
         node = converter.find_node_by_id(data, nid)
         _set_text(node, 0, negative_text or "")
+
+    if cfg.get("lyrics_field"):
+        nid, idx = cfg["lyrics_field"]
+        node = converter.find_node_by_id(data, nid)
+        _set_text(node, idx, lyrics_text or "")
+
+    if cfg.get("duration_field"):
+        nid, idx = cfg["duration_field"]
+        node = converter.find_node_by_id(data, nid)
+        dur = duration if duration is not None else cfg.get("duration_default", 60)
+        dur = max(0.0, min(float(dur), cfg.get("duration_max", 2000)))
+        _set_text(node, idx, dur)
 
     if cfg["image_node"] is not None:
         if not image_filename:
@@ -169,6 +195,10 @@ def api_modes():
             "disabled": cfg.get("disabled", False),
             "disabled_reason": cfg.get("disabled_reason"),
             "models": cfg.get("ollama_models"),
+            "needs_lyrics": bool(cfg.get("lyrics_field")),
+            "needs_duration": bool(cfg.get("duration_field")),
+            "duration_default": cfg.get("duration_default"),
+            "duration_max": cfg.get("duration_max"),
         }
         for key, cfg in MODES.items()
     }
@@ -198,6 +228,8 @@ def api_generate(
     negative: str = Form(""),
     image_filename: str = Form(None),
     model: str = Form(None),
+    lyrics: str = Form(""),
+    duration: float = Form(None),
 ):
     if mode not in MODES:
         raise HTTPException(404, f"unknown mode {mode}")
@@ -212,7 +244,7 @@ def api_generate(
         jobs[job_id] = {"mode": mode, "created": time.time(), "status": "success", **result}
         return {"job_id": job_id}
 
-    prompt_json, _included = build_prompt(mode, prompt, negative, image_filename)
+    prompt_json, _included = build_prompt(mode, prompt, negative, image_filename, lyrics, duration)
     client_id = uuid.uuid4().hex
     result = comfy_post("/prompt", {"prompt": prompt_json, "client_id": client_id})
     prompt_id = result["prompt_id"]

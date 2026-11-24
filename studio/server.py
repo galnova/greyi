@@ -8,6 +8,7 @@ Run: python studio/server.py   (see scripts/start-studio.ps1)
 """
 import json
 import pathlib
+import random
 import shutil
 import time
 import urllib.request
@@ -24,6 +25,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 WORKFLOWS = ROOT / "workflows"
 OUTPUTS = ROOT / "outputs"
 COMFYUI_URL = "http://localhost:8188"
+COMFY_DIR = pathlib.Path("D:/ComfyUI/ComfyUI_windows_portable/ComfyUI")
 OLLAMA_URL = "http://localhost:11434"
 CHAT_NUM_CTX = 8192  # explicit context window so token-remaining has a real ceiling to measure against
 
@@ -32,49 +34,98 @@ app = FastAPI(title="Studio")
 # --- per-mode config -------------------------------------------------
 # node ids are stable identifiers baked into each workflow file (searched
 # across top-level nodes AND any nested subgraphs by find_node_by_id).
+# Each ComfyUI mode lists its "models" (shown in the UI's Model dropdown);
+# the first entry is the default.
 MODES = {
     "text2image": {
         "label": "Text to Image",
-        "workflow": WORKFLOWS / "text2img_dreamshaper.json",
-        "positive_nodes": [6, 15],
-        "negative_nodes": [7, 16],
+        "models": {
+            "DreamShaper XL": {
+                "workflow": WORKFLOWS / "text2img_dreamshaper.json",
+                "positive_nodes": [6, 15],
+                "negative_nodes": [7, 16],
+            },
+            "Flux Dev (higher quality, slower)": {
+                "workflow": WORKFLOWS / "flux_dev_gguf.json",
+                "positive_nodes": [4],
+                "negative_nodes": [],  # Flux ignores negative prompts
+            },
+        },
         "image_node": None,
         "output_kind": "image",
     },
     "image2image": {
         "label": "Image to Image",
-        "workflow": WORKFLOWS / "img2img_dreamshaper.json",
-        "positive_nodes": [6, 15],
-        "negative_nodes": [7, 16],
+        "models": {
+            "DreamShaper XL": {
+                "workflow": WORKFLOWS / "img2img_dreamshaper.json",
+                "positive_nodes": [6, 15],
+                "negative_nodes": [7, 16],
+            },
+        },
         "image_node": 26,
         "output_kind": "image",
     },
     "text2video": {
         "label": "Text to Video",
-        "workflow": WORKFLOWS / "wan22_t2v_gguf.json",
-        "positive_nodes": [89],
-        "negative_nodes": [72],
+        "models": {
+            # Both use the workflow's built-in "Enable Lightning LoRA" switch
+            # (node 129): on = lightx2v 4-step LoRAs at CFG 1 (negative prompt
+            # has no effect), off = full 20 steps at CFG 3.5.
+            "Wan 2.2 14B (fast 4-step)": {
+                "workflow": WORKFLOWS / "wan22_t2v_gguf.json",
+                "positive_nodes": [89],
+                "negative_nodes": [72],
+                "overrides": {129: {0: True}},  # node id -> {widgets_values index: value}
+            },
+            "Wan 2.2 14B (quality 20-step, much slower)": {
+                "workflow": WORKFLOWS / "wan22_t2v_gguf.json",
+                "positive_nodes": [89],
+                "negative_nodes": [72],
+                "overrides": {129: {0: False}},
+            },
+        },
         "image_node": None,
         "output_kind": "video",
     },
     "text2music": {
         "label": "Text to Music",
-        "workflow": WORKFLOWS / "ace_step_audio.json",
-        "positive_nodes": [94],  # widgets_values[0] = tags/style description
-        "negative_nodes": [],
+        "models": {
+            "ACE-Step 1.5": {
+                "workflow": WORKFLOWS / "ace_step_audio.json",
+                "positive_nodes": [94],  # widgets_values[0] = tags/style description
+                "negative_nodes": [],
+            },
+        },
         "image_node": None,
         "output_kind": "audio",
     },
     "image2video": {
         "label": "Image to Video",
-        "workflow": None,  # not wired yet - see studio/README.md
-        "positive_nodes": [],
-        "negative_nodes": [],
-        "image_node": None,
+        # wan22_i2v_gguf.json is a flat graph (no subgraphs); it ships in
+        # fast 4-step form and the quality variant switches it to the
+        # stock 20-step settings by turning the lightx2v LoRAs off.
+        "models": {
+            "Wan 2.2 14B (fast 4-step)": {
+                "workflow": WORKFLOWS / "wan22_i2v_gguf.json",
+                "positive_nodes": [9],
+                "negative_nodes": [10],
+            },
+            "Wan 2.2 14B (quality 20-step, much slower)": {
+                "workflow": WORKFLOWS / "wan22_i2v_gguf.json",
+                "positive_nodes": [9],
+                "negative_nodes": [10],
+                "overrides": {
+                    3: {1: 0.0},  # high-noise speed LoRA strength off
+                    4: {1: 0.0},  # low-noise speed LoRA strength off
+                    13: {3: 20, 4: 3.5, 8: 10},  # steps, cfg, end_at_step
+                    14: {3: 20, 4: 3.5, 7: 10},  # steps, cfg, start_at_step
+                },
+            },
+        },
+        "image_node": 11,
+        "size_node": 12,  # WanImageToVideo - sized to the uploaded image's aspect
         "output_kind": "video",
-        "disabled": True,
-        "disabled_reason": "Not wired up yet - the S2V workflow's nested "
-                            "'extend' subgraphs need more converter work.",
     },
     "text2text": {
         "label": "Chat",
@@ -93,20 +144,44 @@ def _set_text(node, index, value):
     node["widgets_values"][index] = value
 
 
-def build_prompt(mode_key, prompt_text, negative_text, image_filename):
+def _video_size_for(image_filename, area=640 * 640):
+    """Width/height matching the uploaded image's aspect ratio at roughly
+    `area` pixels (what an 8GB card handles), in multiples of 16 as Wan
+    needs. WanImageToVideo center-crops to whatever size it's given, so a
+    fixed square would chop the top/bottom off portrait shots."""
+    try:
+        from PIL import Image
+        with Image.open(COMFY_DIR / "input" / image_filename) as im:
+            w, h = im.size
+    except (OSError, ImportError):
+        return [640, 640]
+    scale = (area / (w * h)) ** 0.5
+    return [max(16, round(w * scale / 16) * 16), max(16, round(h * scale / 16) * 16)]
+
+
+def build_prompt(mode_key, model, prompt_text, negative_text, image_filename):
     cfg = MODES[mode_key]
     if cfg.get("disabled"):
         raise HTTPException(400, cfg.get("disabled_reason", "This mode isn't available yet."))
 
-    data = converter.load_workflow(cfg["workflow"])
+    variants = cfg["models"]
+    variant = variants.get(model) or next(iter(variants.values()))
+    data = converter.load_workflow(variant["workflow"])
 
-    for nid in cfg["positive_nodes"]:
+    for nid in variant["positive_nodes"]:
         node = converter.find_node_by_id(data, nid)
         _set_text(node, 0, prompt_text)
 
-    for nid in cfg["negative_nodes"]:
+    # A blank negative box keeps each workflow's own built-in negative prompt.
+    if negative_text:
+        for nid in variant["negative_nodes"]:
+            node = converter.find_node_by_id(data, nid)
+            _set_text(node, 0, negative_text)
+
+    for nid, values in variant.get("overrides", {}).items():
         node = converter.find_node_by_id(data, nid)
-        _set_text(node, 0, negative_text or "")
+        for index, value in values.items():
+            node["widgets_values"][index] = value
 
     if cfg["image_node"] is not None:
         if not image_filename:
@@ -114,7 +189,18 @@ def build_prompt(mode_key, prompt_text, negative_text, image_filename):
         node = converter.find_node_by_id(data, cfg["image_node"])
         _set_text(node, 0, image_filename)
 
-    return converter.convert_data(data)
+    if cfg.get("size_node") is not None:
+        node = converter.find_node_by_id(data, cfg["size_node"])
+        node["widgets_values"][0:2] = _video_size_for(image_filename)
+
+    prompt_json, included = converter.convert_data(data)
+    # Fresh seeds every run, like the ComfyUI frontend's "randomize" - otherwise
+    # workflows saved with a fixed seed give the same result each time.
+    for node in prompt_json.values():
+        for key in ("seed", "noise_seed"):
+            if isinstance(node["inputs"].get(key), int):
+                node["inputs"][key] = random.randint(0, 2**48)
+    return prompt_json, included
 
 
 def comfy_post(path, payload):
@@ -159,6 +245,22 @@ def ollama_generate(model, prompt):
         raise HTTPException(502, f"Ollama not reachable ({e}). Is it running? See scripts/start-ollama.ps1.")
 
 
+def ollama_unload_all():
+    """Free VRAM before a ComfyUI job. Ollama keeps a chat model resident for
+    minutes after use, and on an 8GB card that starves Wan/Flux badly enough
+    to push them into RAM offload (hours per video instead of minutes)."""
+    try:
+        with urllib.request.urlopen(f"{OLLAMA_URL}/api/ps", timeout=5) as resp:
+            loaded = json.loads(resp.read().decode("utf-8")).get("models", [])
+        for m in loaded:
+            body = json.dumps({"model": m["name"], "keep_alive": 0}).encode("utf-8")
+            req = urllib.request.Request(f"{OLLAMA_URL}/api/generate", data=body,
+                                         headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=30).read()
+    except (urllib.error.URLError, OSError, ValueError):
+        pass  # Ollama not running - nothing to free
+
+
 @app.get("/api/modes")
 def api_modes():
     return {
@@ -168,7 +270,7 @@ def api_modes():
             "needs_image": cfg["image_node"] is not None,
             "disabled": cfg.get("disabled", False),
             "disabled_reason": cfg.get("disabled_reason"),
-            "models": cfg.get("ollama_models"),
+            "models": cfg.get("ollama_models") or list(cfg.get("models", {})),
         }
         for key, cfg in MODES.items()
     }
@@ -212,7 +314,8 @@ def api_generate(
         jobs[job_id] = {"mode": mode, "created": time.time(), "status": "success", **result}
         return {"job_id": job_id}
 
-    prompt_json, _included = build_prompt(mode, prompt, negative, image_filename)
+    prompt_json, _included = build_prompt(mode, model, prompt, negative, image_filename)
+    ollama_unload_all()
     client_id = uuid.uuid4().hex
     result = comfy_post("/prompt", {"prompt": prompt_json, "client_id": client_id})
     prompt_id = result["prompt_id"]
@@ -274,7 +377,7 @@ def _save_copies(outputs, kind):
     if dest_dir is None:
         return
     dest_dir.mkdir(parents=True, exist_ok=True)
-    comfy_output_dir = pathlib.Path("D:/ComfyUI/ComfyUI_windows_portable/ComfyUI/output")
+    comfy_output_dir = COMFY_DIR / "output"
     for o in outputs:
         src = comfy_output_dir / o["subfolder"] / o["filename"]
         if src.exists():

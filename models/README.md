@@ -5,6 +5,13 @@ This directory is intentionally **empty in git**. Model weights are large
 repo stays small and clonable. Only the folder structure (via `.gitkeep`) and
 this README are tracked.
 
+> **Actual model files live in `D:\ai-models\`, not here.** This repo sits in
+> a OneDrive-synced folder, and tens of GB of weights would get uploaded to
+> the cloud. `D:\ai-models\` uses the same subfolder layout below, and
+> ComfyUI's `extra_model_paths.yaml` points at it (see
+> `docs/extra_model_paths.yaml.reference`). This folder is kept only for the
+> layout reference.
+
 ## Layout
 
 | Folder         | Contents                                                    |

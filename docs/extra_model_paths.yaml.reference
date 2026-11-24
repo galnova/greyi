@@ -6,12 +6,14 @@
 # this file's contents back into place at the path above (rename away the
 # .reference extension isn't needed - just copy the content).
 #
-# Points ComfyUI at this repo's models/ folder so models placed there
-# (per models/README.md) are picked up automatically, keeping a single
-# source of truth instead of duplicating files into ComfyUI's own models/.
+# Points ComfyUI at D:\ai-models (same subfolder layout as this repo's
+# models/, see models/README.md) so models placed there are picked up
+# automatically, keeping a single source of truth instead of duplicating
+# files into ComfyUI's own models/. Kept off this repo's OneDrive-synced
+# folder so the weights don't get uploaded to the cloud.
 
 new_ai_repo:
-    base_path: C:/Users/kjete/OneDrive/Desktop/new_ai/models
+    base_path: D:/ai-models
     checkpoints: checkpoints/
     loras: loras/
     vae: vae/

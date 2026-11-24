@@ -40,14 +40,17 @@ Opens on http://localhost:8899.
 | Image to Image | `img2img_dreamshaper.json` (new, single-image) | working |
 | Text to Video | `wan22_t2v_gguf.json` | working |
 | Text to Music | `ace_step_audio.json` | working |
-| Image to Video | `wan22_s2v_gguf_test.json` | **not wired up** |
+| Image to Video | `wan22_i2v_gguf.json` | working |
 
-Image to Video is disabled in the UI. That workflow's "extend to a longer
-video" feature is built from 6 nested/cross-referencing ComfyUI subgraph
-instances, and the converter's subgraph-flattening (written for the
-simpler single-subgraph case in the T2V workflow) doesn't correctly
-resolve all of their cross-links yet. Re-enable it in `server.py`'s
-`MODES["image2video"]` once that's fixed.
+Each mode's `models` entries become the UI's Model dropdown. Both Wan modes
+offer a fast 4-step option (lightx2v LoRAs, CFG 1 - the negative prompt has
+no effect) and a quality 20-step option (CFG 3.5). Image to Video is a flat
+graph with no subgraphs; Studio sizes it to the uploaded image's aspect ratio
+at about 640x640 pixels so portrait/landscape shots aren't center-cropped.
+
+Before every ComfyUI job Studio unloads any Ollama chat model still sitting
+in VRAM - on an 8GB card a resident chat model pushes Wan into RAM offload
+(hours per clip instead of minutes).
 
 ## Adding a mode later
 

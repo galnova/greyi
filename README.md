@@ -99,7 +99,7 @@ repopulate them locally.
 5. **ComfyUI** - installed at `D:\ComfyUI\ComfyUI_windows_portable\`. Launch
    via `.\scripts\start-comfyui.ps1` or the "Launch ComfyUI" Desktop
    shortcut. See `scripts/comfyui-note.md` for the full setup, including how
-   it's wired to read models from this repo's `models/` folder.
+   it's wired to read models from `D:\ai-models\`.
 
 6. **Studio** (optional, built on top of ComfyUI) - no separate install;
    launch via `.\scripts\start-studio.ps1` or the "Launch Studio" Desktop
@@ -117,9 +117,10 @@ repopulate them locally.
 
 ## Where models go
 
-Place downloaded model files into the matching `models/` subfolder
-(`checkpoints`, `loras`, `vae`, `controlnet`, `upscalers`, `video`) - see
-`models/README.md` for details and re-fetch instructions. Ollama manages its
+Place downloaded model files into the matching subfolder of `D:\ai-models\`
+(`checkpoints`, `unet`, `clip`, `loras`, `vae`, `controlnet`, `upscalers`,
+`video`). They're kept off this repo because it lives in a OneDrive-synced
+folder - see `models/README.md` for details and re-fetch instructions. Ollama manages its
 own model store separately (`ollama list`, `ollama pull <model>`).
 
 ## Setting up on a fresh clone
@@ -148,7 +149,8 @@ models/README.md and studio/README.md first for context, then:
      via ComfyUI Manager once it's installed, rather than a raw git clone -
      they have install-time setup steps Manager handles for you)
 
-3. Download these into the matching models/ subfolder. Verify each file's
+3. Download these into the matching subfolder of D:\ai-models\ (NOT this
+   repo's models/ - it's in a OneDrive-synced folder). Verify each file's
    size with a HEAD request before saving (don't trust a filename alone -
    confirm content-length matches what's expected, retry on connection
    resets, they're common with Hugging Face). For any file below marked
@@ -168,8 +170,8 @@ models/README.md and studio/README.md first for context, then:
    - acestep_v1.5_turbo.safetensors <- https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/split_files/diffusion_models/acestep_v1.5_turbo.safetensors (~4.46GB)
    - Wan2.2-T2V-A14B-HighNoise-Q4_K_M.gguf <- search by filename (~9GB)
    - Wan2.2-T2V-A14B-LowNoise-Q4_K_M.gguf <- search by filename (~9GB)
-   - Wan2.2-S2V-14B-Q4_K_M.gguf <- search by filename (~13GB) - only needed
-     if pursuing the not-yet-working Image to Video mode, otherwise skip
+   - Wan2.2-I2V-A14B-HighNoise-Q4_K_M.gguf <- https://huggingface.co/QuantStack/Wan2.2-I2V-A14B-GGUF/resolve/main/HighNoise/Wan2.2-I2V-A14B-HighNoise-Q4_K_M.gguf (~9GB)
+   - Wan2.2-I2V-A14B-LowNoise-Q4_K_M.gguf <- https://huggingface.co/QuantStack/Wan2.2-I2V-A14B-GGUF/resolve/main/LowNoise/Wan2.2-I2V-A14B-LowNoise-Q4_K_M.gguf (~9GB)
 
    models/clip/  (text encoders)
    - clip_l.safetensors <- https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors (~0.25GB)
@@ -194,6 +196,10 @@ models/README.md and studio/README.md first for context, then:
    - wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors,
      wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors
      <- search by filename (~1.15GB each) - 4-step speed LoRAs for Wan2.2 T2V
+   - wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors,
+     wan2.2_i2v_lightx2v_4steps_lora_v1_low_noise.safetensors
+     <- https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/<filename>
+     (~1.15GB each) - 4-step speed LoRAs for Wan2.2 I2V
 
    models/upscalers/
    - 4x-UltraSharp.pth <- search by filename (~65MB) - a widely-mirrored
@@ -225,13 +231,13 @@ accurate for the next fresh clone.
 - [x] Open WebUI shows the Ollama model in its model picker
 - [x] ComfyUI portable downloaded and extracted to `D:\ComfyUI\ComfyUI_windows_portable\`
 - [x] ComfyUI running via `scripts/start-comfyui.ps1`, reachable at http://localhost:8188
-- [x] ComfyUI wired to read models from this repo's `models/` folder (`extra_model_paths.yaml`)
-- [x] First checkpoint model placed in `models/checkpoints/`
+- [x] ComfyUI wired to read models from `D:\ai-models\` (`extra_model_paths.yaml`)
+- [x] First checkpoint model placed in `D:\ai-models\checkpoints\`
 - [x] First image generated successfully in ComfyUI
 - [x] First workflow exported as JSON into `workflows/`
 - [x] Studio built and running, reachable at http://localhost:8899
 - [x] Text to Image, Image to Image, Text to Video, and Text to Music modes wired up and validated in Studio
-- [ ] Image to Video mode in Studio (blocked on converter support for nested subgraphs - see `studio/README.md`)
+- [x] Image to Video mode in Studio (new flat `wan22_i2v_gguf.json`; replaced the old S2V test workflow)
 
 ## Commit message convention
 
